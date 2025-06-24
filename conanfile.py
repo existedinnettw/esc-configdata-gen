@@ -23,7 +23,13 @@ class esc_configdata_genRecipe(ConanFile):
     def requirements(self):
         self.requires("argparse/[>=3.2 <4]")
         self.requires("magic_enum/[>=0.9.7 <1]")
+        # with_toml=True
+        self.requires("reflect-cpp/[>=0.18.0 <1]")
         self.test_requires("gtest/[>=1.16.0 <2]")
+
+    def configure(self):
+        # https://github.com/conan-io/conan/issues/13383#issuecomment-1460431823
+        self.options["reflect-cpp/*"].with_toml = True
 
     def layout(self):
         cmake_layout(self)

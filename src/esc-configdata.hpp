@@ -2,16 +2,26 @@
 
 /**
  * @see ESC Section I – Technology ch 11.1 SII EEPROM Content
+ * @details
+ * only >=cpp26 have bit-filed reflection
  */
 
+#include <bitset>
 #include <cstdint>
 #include <string>
 #include <vector>
+// #include <rfl.hpp>
+
+using Byte = std::bitset<8>;
+
+template<typename T>
+T
+from_byte(const Byte& byte);
 
 /**
  * @see ESC Section II – Register Description ch 2.25 PDI Control (0x0140)
  */
-enum class PDI_control : uint8_t
+enum class PDI_control_type : uint8_t
 {
   deactivated = 0x00,
   di4 = 0x01,
@@ -33,6 +43,12 @@ enum class PDI_control : uint8_t
   onchip_bus = 0x80,
   // other reserved
 };
+struct PDI_control
+{
+  PDI_control_type type;
+};
+Byte
+to_byte(const PDI_control& pdi_control);
 
 /**
  * @see ESC Section II – Register Description 2.26 ESC Configuration (0x0141)
@@ -43,28 +59,30 @@ struct ESC_config
    * 0: AL status register has to be set by PDI
    * 1: AL status register will be set to value written to AL control register
    */
-  bool al_status_reg_set_by_al_control : 1; // else set by PDI
+  bool al_status_reg_set_by_al_control; // else set by PDI
 
   /**
    * 0: disabled (if bits [7:4]=0)
    * 1: enabled at all ports (overrides bits [7:4])
    */
-  bool enhanced_link_detection_enable : 1;
+  bool enhanced_link_detection_enable;
 
-  bool distibuted_clock_sync_out_enable : 1;
-  bool distibuted_clock_latch_in_enable : 1;
-  bool enhanced_link_port0 : 1;
-  bool enhanced_link_port1 : 1;
-  bool enhanced_link_port2 : 1;
-  bool enhanced_link_port3 : 1;
+  bool distibuted_clock_sync_out_enable;
+  bool distibuted_clock_latch_in_enable;
+  bool enhanced_link_port0;
+  bool enhanced_link_port1;
+  bool enhanced_link_port2;
+  bool enhanced_link_port3;
 };
+Byte
+to_byte(const ESC_config& esc_config);
 
 /**
  * @see ESC Section II – Register Description 2.28 PDI Configuration (0x0150:0x0153)
  */
 // class PDI_config;
 
-enum class SPI_mode
+enum class SPI_mode : uint8_t
 {
   spi_mode_0 = 0x00, // CPOL=0, CPHA=0, most used
 
@@ -72,7 +90,7 @@ enum class SPI_mode
   spi_mode_2 = 0x02, // CPOL=1, CPHA=0
   spi_mode_3 = 0x03, // CPOL=1, CPHA=1
 };
-enum class Output_driver_polarity
+enum class Output_driver_polarity : uint8_t
 {
   push_pull_active_low = 0x00,
   open_drain_active_low = 0x01,
@@ -80,13 +98,13 @@ enum class Output_driver_polarity
   open_source_active_high = 0x03,
 };
 
-enum class SPI_SEL_polarity
+enum class SPI_SEL_polarity : bool
 {
   active_low = 0x00,
   active_high = 0x01,
 };
 
-enum class SPI_data_out_sample_mode
+enum class SPI_data_out_sample_mode : bool
 {
   normal_sample = 0x00, // SPI_DO and SPI_DI are sampled at the same SPI_CLK edge
   late_sample = 0x01,   // SPI_DO and SPI_DI are sampled at different SPI_CLK edges
