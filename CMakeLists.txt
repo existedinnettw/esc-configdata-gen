@@ -15,7 +15,7 @@ add_executable(esc-configdata-gen src/main.cpp)
 
 target_link_libraries(
     esc-configdata-gen PRIVATE argparse::argparse esc-configdata
-                               magic_enum::magic_enum)
+                               magic_enum::magic_enum reflectcpp::reflectcpp)
 
 add_subdirectory(tests)
 

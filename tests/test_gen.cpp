@@ -14,6 +14,7 @@
 
 using ::testing::Test;
 
+
 TEST(EscConfigDataTest, GenFunction)
 {
   auto pdi_control = PDI_control{ PDI_control_type::spi };
@@ -26,9 +27,8 @@ TEST(EscConfigDataTest, GenFunction)
                                 .enhanced_link_port1 = false,
                                 .enhanced_link_port2 = false,
                                 .enhanced_link_port3 = false };
-  std::cout << std::format("0x{:02x}{:02x}\n",
-                           magic_enum::enum_integer(pdi_control.type),
-                           static_cast<uint8_t>(to_byte(esc_config).to_ulong()));
+  std::cout << "0x" << binaryToHexString(to_raw(pdi_control).to_string())
+            << binaryToHexString(to_raw(esc_config).to_string()) << '\n';
 
   // 0x0150:0x0151
   auto pdi_config = PDI_SPI_config{
@@ -45,8 +45,8 @@ TEST(EscConfigDataTest, GenFunction)
     .latch1_to_sync1_config = true,
     .latch1_map_to_al_request = true,
   };
-  std::cout << std::format(
-    "0x{:02x}{:02x}\n", std::bit_cast<std::uint8_t>(pdi_config), std::bit_cast<std::uint8_t>(sync_sig_latch_mode));
+  std::cout << "0x" << binaryToHexString(to_raw(pdi_config).to_string())
+            << binaryToHexString(to_raw(sync_sig_latch_mode).to_string()) << '\n';
 
   // 0x0982:0x0983
   Sync_signal_pulse_length sync_signal_pulse_length = 0x1027;
@@ -62,61 +62,77 @@ TEST(EscConfigDataTest, GenFunction)
   // checksum
 }
 
-void
-print(const PDI_SPI_config& cfg)
-{
-  std::cout << "spi_mode: " << magic_enum::enum_name(cfg.spi_mode) << '\n';
-  std::cout << "spi_irq_driver_polarity: " << magic_enum::enum_name(cfg.spi_irq_driver_polarity) << '\n';
-  std::cout << "spi_sel_polarity: " << magic_enum::enum_name(cfg.spi_sel_polarity) << '\n';
-  std::cout << "spi_data_out_sample_mode: " << magic_enum::enum_name(cfg.spi_data_out_sample_mode) << '\n';
-}
-void
-print(const Sync_signal_latch_mode& cfg)
-{
-  std::cout << "sync0_out_driver_polarity: " << magic_enum::enum_name(cfg.sync0_out_driver_polarity) << '\n';
-  std::cout << "latch0_to_sync0_config: " << cfg.latch0_to_sync0_config << '\n';
-  std::cout << "latch0_map_to_al_request: " << cfg.latch0_map_to_al_request << '\n';
-  std::cout << "sync1_out_driver_polarity: " << magic_enum::enum_name(cfg.sync1_out_driver_polarity) << '\n';
-  std::cout << "latch1_to_sync1_config: " << cfg.latch1_to_sync1_config << '\n';
-  std::cout << "latch1_map_to_al_request: " << cfg.latch1_map_to_al_request << '\n';
-}
 
 TEST(EscConfigDataTest, DecodeFunction)
 {
   uint8_t raw_pdi = 0x03;
   uint8_t raw_latch = 0x44;
 
-  PDI_SPI_config pdi_spi_config = std::bit_cast<PDI_SPI_config>(raw_pdi);
-  Sync_signal_latch_mode sync_sig_latch_mode = std::bit_cast<Sync_signal_latch_mode>(raw_latch);
+  PDI_SPI_config pdi_spi_config = from_raw<PDI_SPI_config>(raw_pdi);
+  Sync_signal_latch_mode sync_sig_latch_mode = from_raw<Sync_signal_latch_mode>(raw_latch);
 
   EXPECT_EQ(pdi_spi_config.spi_mode, SPI_mode::spi_mode_3);
   EXPECT_EQ(pdi_spi_config.spi_irq_driver_polarity, Output_driver_polarity::push_pull_active_low);
 
   // reflect-cpp?
-  print(pdi_spi_config);
-  printf("\n");
-
-  print(sync_sig_latch_mode);
-  printf("\n");
+  // print(pdi_spi_config);
+  std::cout << rfl::toml::write(pdi_spi_config) << "\n\n";
+  std::cout << rfl::toml::write(sync_sig_latch_mode) << "\n\n";
 }
 
-TEST(EscConfigDataTest, SerializeFunction)
-{
-  auto pdi_control = PDI_control{ PDI_control_type::spi };
 
-  auto esc_config = ESC_config{ .al_status_reg_set_by_al_control = true,
-                                .enhanced_link_detection_enable = false,
-                                .distibuted_clock_sync_out_enable = true,
-                                .distibuted_clock_latch_in_enable = true,
-                                .enhanced_link_port0 = false,
-                                .enhanced_link_port1 = false,
-                                .enhanced_link_port2 = false,
-                                .enhanced_link_port3 = false };
-  std::cout << std::format("0x{:02x}{:02x}\n",
-                           magic_enum::enum_integer(pdi_control.type),
-                           static_cast<uint8_t>(to_byte(esc_config).to_ulong()));
-  {
-    std::cout << "PDI_control as TOML: \n" << rfl::toml::write(pdi_control) << '\n'; // need put in struct
-    std::cout << "ESC_config as TOML: \n" << rfl::toml::write(esc_config) << '\n';
-  }
+TEST(EscConfigDataTest, SII_config_data_to_raw_test)
+{
+  SII_config_data sii_config_data = {
+    .pdi_control = PDI_control{ PDI_control_type::spi },
+    .esc_config =
+      ESC_config{
+                               .al_status_reg_set_by_al_control = true,
+                               .enhanced_link_detection_enable = false,
+                               .distibuted_clock_sync_out_enable = true,
+                               .distibuted_clock_latch_in_enable = true,
+                               .enhanced_link_port0 = false,
+                               .enhanced_link_port1 = false,
+                               .enhanced_link_port2 = false,
+                               .enhanced_link_port3 = false,
+                               },
+    .pdi_spi_config =
+      PDI_SPI_config{
+                               .spi_mode = SPI_mode::spi_mode_0,
+                               .spi_irq_driver_polarity = Output_driver_polarity::push_pull_active_high,
+                               .spi_sel_polarity = SPI_SEL_polarity::active_low,
+                               .spi_data_out_sample_mode = SPI_data_out_sample_mode::normal_sample,
+                               },
+    .sync_signal_latch_mode =
+      Sync_signal_latch_mode{
+                               .sync0_out_driver_polarity = Output_driver_polarity::push_pull_active_high,
+                               .latch0_to_sync0_config = true,
+                               .latch0_map_to_al_request = true,
+                               .sync1_out_driver_polarity = Output_driver_polarity::push_pull_active_high,
+                               .latch1_to_sync1_config = true,
+                               .latch1_map_to_al_request = true,
+                               },
+    .sync_signal_pulse_length = 0x1027,
+  };
+  // print raw data
+  std::cout << "Raw SII_config_data:\n";
+  auto raw_bits = to_raw(sii_config_data);
+  std::cout << "0b" << raw_bits.to_string() << "\n";
+  std::cout << "0x" << binaryToHexString(raw_bits.to_string()) << "\n\n";
+
+  std::cout << rfl::toml::write(sii_config_data) << "\n\n";
+}
+
+TEST(EscConfigDataTest, SII_config_data_from_raw_test)
+{
+  std::string raw_hex = "050D08EE1027";
+  std::string raw_bin = hexToBinaryString(raw_hex);
+  SII_config_data_bits raw_bits = SII_config_data_bits(raw_bin);
+
+  std::string repeat_raw_hex = binaryToHexString(raw_bits.to_string());
+  EXPECT_EQ(raw_hex, repeat_raw_hex);
+
+  SII_config_data sii_config_data = from_raw(raw_bits);
+  std::cout << "Decoded SII_config_data:\n";
+  std::cout << rfl::toml::write(sii_config_data) << "\n\n";
 }

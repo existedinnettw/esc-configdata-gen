@@ -6,8 +6,13 @@
  * only >=cpp26 have bit-filed reflection
  */
 
+#include <bit> //bit_cast
 #include <bitset>
 #include <cstdint>
+#include <iomanip> // For std::setw and std::setfill
+#include <iostream>
+#include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 // #include <rfl.hpp>
@@ -16,7 +21,7 @@ using Byte = std::bitset<8>;
 
 template<typename T>
 T
-from_byte(const Byte& byte);
+from_raw(const Byte& byte);
 
 /**
  * @see ESC Section II – Register Description ch 2.25 PDI Control (0x0140)
@@ -48,7 +53,7 @@ struct PDI_control
   PDI_control_type type;
 };
 Byte
-to_byte(const PDI_control& pdi_control);
+to_raw(const PDI_control& pdi_control);
 
 /**
  * @see ESC Section II – Register Description 2.26 ESC Configuration (0x0141)
@@ -75,7 +80,7 @@ struct ESC_config
   bool enhanced_link_port3;
 };
 Byte
-to_byte(const ESC_config& esc_config);
+to_raw(const ESC_config& esc_config);
 
 /**
  * @see ESC Section II – Register Description 2.28 PDI Configuration (0x0150:0x0153)
@@ -113,27 +118,31 @@ enum class SPI_data_out_sample_mode : bool
 /**
  * @see ESC Section II – Register Description 2.28.2 PDI SPI Configuration
  */
-struct [[gnu::packed]] PDI_SPI_config
+struct PDI_SPI_config
 {
-  SPI_mode spi_mode : 2;
-  Output_driver_polarity spi_irq_driver_polarity : 2;
-  SPI_SEL_polarity spi_sel_polarity : 1;
-  SPI_data_out_sample_mode spi_data_out_sample_mode : 1;
-  uint8_t : 2; // reserved
+  SPI_mode spi_mode;
+  Output_driver_polarity spi_irq_driver_polarity;
+  SPI_SEL_polarity spi_sel_polarity;
+  SPI_data_out_sample_mode spi_data_out_sample_mode;
+  // uint8_t : 2; // reserved
 };
+Byte
+to_raw(const PDI_SPI_config& pdi_spi_config);
 
 /**
  * @see ESC Section II – Register Description 2.28.7 Sync/Latch Configuration
  */
-struct [[gnu::packed]] Sync_signal_latch_mode
+struct Sync_signal_latch_mode
 {
-  Output_driver_polarity sync0_out_driver_polarity : 2;
-  bool latch0_to_sync0_config : 1; // true: sync0, false: latch0
-  bool latch0_map_to_al_request : 1;
-  Output_driver_polarity sync1_out_driver_polarity : 2;
-  bool latch1_to_sync1_config : 1; // true: sync1, false: latch1
-  bool latch1_map_to_al_request : 1;
+  Output_driver_polarity sync0_out_driver_polarity;
+  bool latch0_to_sync0_config; // true: sync0, false: latch0
+  bool latch0_map_to_al_request;
+  Output_driver_polarity sync1_out_driver_polarity;
+  bool latch1_to_sync1_config; // true: sync1, false: latch1
+  bool latch1_map_to_al_request;
 };
+Byte
+to_raw(const Sync_signal_latch_mode& sync_signal_latch_mode);
 
 /**
  * @brief
@@ -143,4 +152,50 @@ struct [[gnu::packed]] Sync_signal_latch_mode
  * 0 --> Acknowledge mode: SyncSignal will be cleared by reading SYNC[1:0] Status register
  * @see Pulse Length of SyncSignals (0x0982:0x983)
  */
-using Sync_signal_pulse_length = uint16_t;
+// using Sync_signal_pulse_length = uint16_t;
+typedef uint16_t Sync_signal_pulse_length;
+std::bitset<16>
+to_raw(const Sync_signal_pulse_length& sync_signal_pulse_length);
+
+struct SII_config_data
+{
+  // word 0
+  PDI_control pdi_control;
+  ESC_config esc_config;
+
+  // word 1
+  std::optional<PDI_SPI_config> pdi_spi_config;
+  Sync_signal_latch_mode sync_signal_latch_mode;
+
+  // word 2
+  Sync_signal_pulse_length sync_signal_pulse_length;
+
+  // word 3
+  // Extended PDI Configuration (0x0152:0x0153)
+
+  // word 4
+  // Configured_Station_alias configured_station_alias;
+
+  // word 5
+  // uint16_t reserved1; // reserved
+
+  // word 6
+  // uint16_t reserved2; // reserved
+
+  // word 7
+  // uint16_t checksum; // checksum
+};
+
+using SII_config_data_bits = std::bitset<3 * sizeof(uint16_t) * 8>;
+
+SII_config_data_bits
+to_raw(const SII_config_data& sii_config_data);
+
+SII_config_data
+from_raw(const SII_config_data_bits& bits);
+
+std::string
+binaryToHexString(const std::string& binaryString);
+
+std::string
+hexToBinaryString(const std::string& hexString);
