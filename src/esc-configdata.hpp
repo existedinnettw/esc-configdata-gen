@@ -17,11 +17,9 @@
 #include <vector>
 // #include <rfl.hpp>
 
-using Byte = std::bitset<8>;
-
 template<typename T>
 T
-from_raw(const Byte& byte);
+from_raw(const uint8_t& byte);
 
 /**
  * @see ESC Section II – Register Description ch 2.25 PDI Control (0x0140)
@@ -52,7 +50,7 @@ struct PDI_control
 {
   PDI_control_type type;
 };
-Byte
+uint8_t
 to_raw(const PDI_control& pdi_control);
 
 /**
@@ -79,7 +77,7 @@ struct ESC_config
   bool enhanced_link_port2;
   bool enhanced_link_port3;
 };
-Byte
+uint8_t
 to_raw(const ESC_config& esc_config);
 
 /**
@@ -126,7 +124,7 @@ struct PDI_SPI_config
   SPI_data_out_sample_mode spi_data_out_sample_mode;
   // uint8_t : 2; // reserved
 };
-Byte
+uint8_t
 to_raw(const PDI_SPI_config& pdi_spi_config);
 
 /**
@@ -141,7 +139,7 @@ struct Sync_signal_latch_mode
   bool latch1_to_sync1_config; // true: sync1, false: latch1
   bool latch1_map_to_al_request;
 };
-Byte
+uint8_t
 to_raw(const Sync_signal_latch_mode& sync_signal_latch_mode);
 
 /**
@@ -154,7 +152,7 @@ to_raw(const Sync_signal_latch_mode& sync_signal_latch_mode);
  */
 // using Sync_signal_pulse_length = uint16_t;
 typedef uint16_t Sync_signal_pulse_length;
-std::bitset<16>
+uint16_t
 to_raw(const Sync_signal_pulse_length& sync_signal_pulse_length);
 
 struct SII_config_data

@@ -11,4 +11,5 @@ class esc_configdata_genTestConan(ConanFile):
 
     def test(self):
         if can_run(self):
-            self.run("esc-configdata-gen", env="conanrun")
+            cmd = ["esc-configdata-gen", "-d", "050C08EE1027"]
+            self.run(" ".join(cmd), env="conanrun")

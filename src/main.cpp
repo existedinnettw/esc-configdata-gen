@@ -1,4 +1,5 @@
 #include "esc-configdata.hpp"
+#include "util.hpp"
 
 #include <rfl.hpp>
 #include <rfl/toml.hpp>
@@ -54,13 +55,13 @@ main(int argc, char** argv)
     std::cout << hex << std::endl;
   } else if (parser.is_used("decode")) {
 
-    std::string raw_hex = parser.get<std::string>("decode"); // e.g.0x050D08EE1027
+    std::string raw_hex = parser.get<std::string>("decode"); // e.g.0x050C08EE1027
     std::string raw_bin = hexToBinaryString(raw_hex);
     SII_config_data_bits raw_bits = SII_config_data_bits(raw_bin);
 
     SII_config_data config = from_raw(raw_bits);
     std::string toml = rfl::toml::write(config);
-    std::cout << toml << std::endl;
+    std::cout << reverseBlocksOrderInToml(toml) << std::endl;
   }
 
   return 0;

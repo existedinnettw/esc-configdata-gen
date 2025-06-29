@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(esc-configdata-gen CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(argparse REQUIRED)
-find_package(magic_enum REQUIRED)
 find_package(reflectcpp REQUIRED CONFIG)
 
 add_library(esc-configdata src/esc-configdata.cpp)
@@ -11,13 +13,22 @@ target_include_directories(
                           $<INSTALL_INTERFACE:src>)
 # target_link_libraries(esc-configdata PUBLIC reflectcpp::reflectcpp)
 
+add_library(util src/util.cpp)
+target_include_directories(
+    util PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+                $<INSTALL_INTERFACE:src>)
+target_link_libraries(esc-configdata PUBLIC reflectcpp::reflectcpp)
+
 add_executable(esc-configdata-gen src/main.cpp)
 
 target_link_libraries(
     esc-configdata-gen PRIVATE argparse::argparse esc-configdata
-                               magic_enum::magic_enum reflectcpp::reflectcpp)
+                               reflectcpp::reflectcpp util)
 
-add_subdirectory(tests)
+if (NOT BUILD_TESTING STREQUAL OFF)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
 
 install(
     TARGETS esc-configdata-gen

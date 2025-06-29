@@ -1,7 +1,7 @@
 #include <esc-configdata.hpp>
+#include <util.hpp>
 
 #include <gtest/gtest.h>
-#include <magic_enum/magic_enum.hpp>
 #include <rfl.hpp>
 #include <rfl/Generic.hpp>
 #include <rfl/json.hpp>
@@ -13,6 +13,28 @@
 #include <string>
 
 using ::testing::Test;
+
+// Helper function to convert uint8_t to binary string
+std::string
+uint8ToBinaryString(uint8_t value)
+{
+  std::string result;
+  for (int i = 7; i >= 0; --i) {
+    result += ((value >> i) & 1) ? '1' : '0';
+  }
+  return result;
+}
+
+// Helper function to convert uint16_t to binary string
+std::string
+uint16ToBinaryString(uint16_t value)
+{
+  std::string result;
+  for (int i = 15; i >= 0; --i) {
+    result += ((value >> i) & 1) ? '1' : '0';
+  }
+  return result;
+}
 
 
 TEST(EscConfigDataTest, GenFunction)
@@ -27,8 +49,8 @@ TEST(EscConfigDataTest, GenFunction)
                                 .enhanced_link_port1 = false,
                                 .enhanced_link_port2 = false,
                                 .enhanced_link_port3 = false };
-  std::cout << "0x" << binaryToHexString(to_raw(pdi_control).to_string())
-            << binaryToHexString(to_raw(esc_config).to_string()) << '\n';
+  std::cout << "0x" << binaryToHexString(uint8ToBinaryString(to_raw(pdi_control)))
+            << binaryToHexString(uint8ToBinaryString(to_raw(esc_config))) << '\n';
 
   // 0x0150:0x0151
   auto pdi_config = PDI_SPI_config{
@@ -45,12 +67,13 @@ TEST(EscConfigDataTest, GenFunction)
     .latch1_to_sync1_config = true,
     .latch1_map_to_al_request = true,
   };
-  std::cout << "0x" << binaryToHexString(to_raw(pdi_config).to_string())
-            << binaryToHexString(to_raw(sync_sig_latch_mode).to_string()) << '\n';
+  std::cout << "0x" << binaryToHexString(uint8ToBinaryString(to_raw(pdi_config)))
+            << binaryToHexString(uint8ToBinaryString(to_raw(sync_sig_latch_mode))) << '\n';
 
   // 0x0982:0x0983
-  Sync_signal_pulse_length sync_signal_pulse_length = 0x1027;
+  Sync_signal_pulse_length sync_signal_pulse_length = 10000; // 1000 * 10ns
   std::cout << std::format("0x{:04x}\n", sync_signal_pulse_length);
+  EXPECT_EQ(to_raw(sync_signal_pulse_length), 10000);
 
   // 0x0152:0x0153
   std::cout << std::format("0x{:04x}\n", 0);
@@ -112,7 +135,7 @@ TEST(EscConfigDataTest, SII_config_data_to_raw_test)
                                .latch1_to_sync1_config = true,
                                .latch1_map_to_al_request = true,
                                },
-    .sync_signal_pulse_length = 0x1027,
+    .sync_signal_pulse_length = 10000, // 1000 * 10ns
   };
   // print raw data
   std::cout << "Raw SII_config_data:\n";
@@ -120,12 +143,14 @@ TEST(EscConfigDataTest, SII_config_data_to_raw_test)
   std::cout << "0b" << raw_bits.to_string() << "\n";
   std::cout << "0x" << binaryToHexString(raw_bits.to_string()) << "\n\n";
 
-  std::cout << rfl::toml::write(sii_config_data) << "\n\n";
+  EXPECT_EQ(binaryToHexString(raw_bits.to_string()), "050D08EE1027");
+
+  // std::cout << rfl::toml::write(sii_config_data) << "\n\n";
 }
 
 TEST(EscConfigDataTest, SII_config_data_from_raw_test)
 {
-  std::string raw_hex = "050D08EE1027";
+  std::string raw_hex = "050C08EE1027";
   std::string raw_bin = hexToBinaryString(raw_hex);
   SII_config_data_bits raw_bits = SII_config_data_bits(raw_bin);
 
@@ -135,4 +160,59 @@ TEST(EscConfigDataTest, SII_config_data_from_raw_test)
   SII_config_data sii_config_data = from_raw(raw_bits);
   std::cout << "Decoded SII_config_data:\n";
   std::cout << rfl::toml::write(sii_config_data) << "\n\n";
+
+  // then back to raw_hex
+  auto repeat_raw_bits = to_raw(sii_config_data);
+  std::string repeat_raw_bin = repeat_raw_bits.to_string();
+  std::string repeat_raw_hex2 = binaryToHexString(repeat_raw_bin);
+  EXPECT_EQ(repeat_raw_hex, repeat_raw_hex2);
+}
+
+TEST(UtilTest, ReverseBlocksOrderInToml)
+{
+  // Test with a simple TOML with multiple sections
+  std::string input = R"(top_level_var = 42
+
+[section_a]
+var_a = "value_a"
+another_var = true
+
+[section_b]
+var_b = "value_b"
+num_var = 123
+
+[section_c]
+var_c = "value_c")";
+
+  std::string expected = R"(top_level_var = 42
+
+[section_c]
+var_c = "value_c"
+
+[section_b]
+num_var = 123
+var_b = "value_b"
+
+[section_a]
+another_var = true
+var_a = "value_a")";
+
+  std::string result = reverseBlocksOrderInToml(input);
+  EXPECT_EQ(expected, result);
+}
+
+TEST(UtilTest, ReverseBlocksOrderInTomlEmpty)
+{
+  std::string input = "";
+  std::string result = reverseBlocksOrderInToml(input);
+  EXPECT_EQ(input, result);
+}
+
+TEST(UtilTest, ReverseBlocksOrderInTomlSingleSection)
+{
+  std::string input = R"([section]
+var = "value")";
+
+  std::string result = reverseBlocksOrderInToml(input);
+  EXPECT_EQ(input, result);
 }
