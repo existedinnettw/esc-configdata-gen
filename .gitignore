@@ -34,3 +34,4 @@
 build/*
 CMakeUserPresets.json
 test_package/*.sh
+/.vscode/tasks.json
