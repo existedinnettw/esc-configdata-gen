@@ -25,8 +25,10 @@ class esc_configdata_genRecipe(ConanFile):
         # with_toml=True
         self.requires("reflect-cpp/[>=0.18.0 <1]")
         self.test_requires("gtest/[>=1.16.0 <2]")
+        self.build_requires("cmake/[>=4.2.0 <5]")
 
     def configure(self):
+        self.settings.compiler.cppstd = "23"
         # https://github.com/conan-io/conan/issues/13383#issuecomment-1460431823
         self.options["reflect-cpp/*"].with_toml = True
 

@@ -1,5 +1,13 @@
-#include "esc-configdata.hpp"
+module;
+// Standard headers required by implementation
+#include <cstdint>
+#include <bitset>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <vector>
 #include <cstring>  // for memcpy
+module esc_configdata;
 
 uint8_t
 to_raw(const PDI_control& pdi_control)

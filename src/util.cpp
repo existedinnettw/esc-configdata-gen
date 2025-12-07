@@ -1,8 +1,12 @@
+module;
+
 #include <algorithm> // For std::reverse
 #include <iostream>
 #include <sstream> // For std::stringstream
 #include <string>
 #include <vector>
+
+module util;
 
 std::string
 reverseBlocksOrderInToml(const std::string& toml)

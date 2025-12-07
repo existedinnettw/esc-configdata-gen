@@ -1,5 +1,5 @@
-#include "esc-configdata.hpp"
-#include "util.hpp"
+import esc_configdata;
+import util;
 
 #include <rfl.hpp>
 #include <rfl/toml.hpp>
